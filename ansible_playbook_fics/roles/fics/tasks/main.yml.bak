@@ -1,0 +1,55 @@
+    - name: add nameserver to resolv.conf
+      shell: grep 223.5.5.5 /etc/resolv.conf || echo "nameserver 223.5.5.5" >> /etc/resolv.conf
+      
+    - name: copy fics package to remote host
+      copy: src=fics-v1.0.1-client-20160127.tar.gz dest=/tmp/
+   
+    - name: unarchive fics  packages
+      command: tar -xzvf  fics-v1.0.1-client-20160127.tar.gz
+      args: 
+        chdir: /tmp
+        creates: /tmp/fics-v1.0.1-client-20160127
+        
+    - name: copy pip package to remote host
+      copy: src=pip-7.1.2.tar.gz dest=/tmp/
+
+    - name: unarchive pip.tar.gz
+      command: tar -zxvf pip-7.1.2.tar.gz
+      args:
+        chdir: /tmp
+        creates: /tmp/pip-7.1.2
+        
+    - name: install pip
+      command: python setup.py install
+      args: 
+        chdir: /tmp/pip-7.1.2
+    
+    - name: copy pexpect package to host
+      copy: src=pexpect-4.1.0-py2.py3-none-any.whl dest=/tmp
+        
+    - name: install pexpect
+      command: pip install pexpect-4.1.0-py2.py3-none-any.whl
+      args:
+        chdir: /tmp/
+   
+    - name: install fics
+      expect:
+        command: ./install 
+        responses:
+            Continue: "Y"
+        chdir: /tmp/fics-v1.0.1-client-20160127
+   
+    - name: stop fics services
+     # shell: ps -ef | grep fiwa &> /dev/null && pkill -9 fiwa
+      shell: ps -ef | grep fiwa | grep -v grep &> /dev/null && pkill -9 fiwa
+      ignore_errors: True
+   
+    - name: copy client patches file to fics floder
+      copy: src=client/{{ item }} dest=/sobey/fics/client/
+      with_items:
+        - fiwatchdog
+        - scm
+   
+    - name: copy libs patches file to fics floder
+      copy: src=libs/libnixscmd.so dest=/sobey/fics/libs/
+
